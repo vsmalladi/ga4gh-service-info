@@ -31,6 +31,9 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    basicAuth:
+      type: http
+      scheme: basic
   schemas:
     Service:
       description: 'GA4GH service'
@@ -100,6 +103,8 @@ components:
           type: string
           description: 'Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.'
           example: '1.0.0'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
     ServiceType:
       description: 'Type of a GA4GH service'
       type: object
@@ -120,3 +125,111 @@ components:
           type: string
           description: 'Version of the API or specification. GA4GH specifications use semantic versioning.'
           example: '1.0.0'
+    Capabilities:
+      description: |
+        Capabilities and limitations of this service. An extensible object where implementations
+        can describe service-specific features, hardware resources, and other system characteristics
+        as arbitrary key-value pairs.
+        
+        Each capability is represented as a CapabilityValue, which can include metadata such as
+        description, unit, and documentation links. This allows services to expose compute resources
+        (cpu_cores, ram_gb), feature support (authentication_required), service limits 
+        (max_concurrent_jobs, rate_limit_requests_per_hour), and custom service-specific capabilities.
+      type: object
+      properties:
+        standard:
+          type: object
+          description: 'Standard GA4GH capability definitions.'
+          additionalProperties:
+            $ref: '#/components/schemas/CapabilityValue'
+        custom:
+          type: object
+          description: 'Custom service-specific capability definitions.'
+          additionalProperties:
+            $ref: '#/components/schemas/CapabilityValue'
+      example:
+        standard:
+          authentication_required:
+            value: true
+            description: 'Authentication is required to access this service'
+            supported: true
+          api_version:
+            value: '1.0.0'
+            description: 'API specification version implemented'
+            specificationUrl: 'https://specs.example.com/api'
+        custom:
+          cpu_cores:
+            value: 32
+            description: 'Number of CPU cores available per machine'
+            unit: 'cores'
+          ram_gb:
+            value: 256
+            description: 'RAM available per machine'
+            unit: 'GB'
+          disk_gb:
+            value: 2000
+            description: 'Disk space available'
+            unit: 'GB'
+          max_concurrent_jobs:
+            value: 100
+            description: 'Maximum number of concurrent jobs'
+          rate_limit_requests_per_hour:
+            value: 1000
+            description: 'API rate limit'
+            unit: 'requests/hour'
+          accelerators:
+            value:
+              - type: 'GPU'
+                count: 4
+              - type: 'TPU'
+                count: 2
+            description: 'Available accelerator types and counts'
+          chip_type:
+            value: 'x86_64'
+            description: 'Main CPU chip type'
+            documentationUrl: 'https://docs.example.com/hardware'
+          batch_processing_supported:
+            value: true
+            description: 'Whether batch job processing is supported'
+            supported: true
+    CapabilityValue:
+      type: object
+      description: |
+        A capability value with its metadata. The `value` field holds the actual capability
+        information, which can be any JSON type (string, number, boolean, object, array).
+        Additional metadata fields like `description`, `unit`, and URLs provide context.
+      required:
+        - value
+      properties:
+        value:
+          description: 'The actual capability value. Can be any JSON type (string, number, boolean, object, array, null).'
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: array
+            - type: object
+            - type: 'null'
+          example: 32
+        description:
+          type: string
+          description: 'Human-readable description of this capability.'
+          example: 'Number of CPU cores available per machine'
+        unit:
+          type: string
+          description: 'Optional unit of measurement for numeric values.'
+          example: 'cores'
+        supported:
+          type: boolean
+          description: 'Whether this capability is supported by the service instance.'
+          example: true
+        documentationUrl:
+          type: string
+          format: uri
+          description: 'URL to documentation of this capability.'
+          example: 'https://docs.example.com/capabilities/cpu'
+        specificationUrl:
+          type: string
+          format: uri
+          description: 'URL to an API specification or standard supporting this capability.'
+          example: 'https://specs.example.com/compute-resources'
